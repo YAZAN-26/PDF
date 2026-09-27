@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دمج ملفات PDF - PDF Master</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f3f4f6; }
+    </style>
+    <!-- مكتبة PDF-Lib للدمج المحلي -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-gray-800">
+
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="../index.html" class="flex items-center gap-2 text-gray-600 hover:text-red-600 font-bold transition-colors text-sm">
+                <i class="fa-solid fa-arrow-right"></i>
+                <span>العودة للرئيسية</span>
+            </a>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-600 rounded-xl flex items-center justify-center text-white text-lg shadow-md">
+                    <i class="fa-solid fa-object-group"></i>
+                </div>
+                <span class="text-lg font-extrabold text-gray-900">دمج ملفات PDF</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-3xl mx-auto px-4 py-12 w-full">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">دمج ملفات PDF متعددة</h1>
+            <p class="text-gray-600 text-sm">اجمع عدة ملفات PDF في ملف واحد مرتب بسهولة وبدون رفعها لأي سيرفر.</p>
+        </div>
+
+        <!-- Upload Box -->
+        <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-gray-300 hover:border-red-500 bg-white rounded-2xl p-10 text-center cursor-pointer transition-all shadow-sm hover:shadow-md group mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <h3 class="font-bold text-gray-800 text-base mb-1">اضغط هنا لاختيار ملفات PDF</h3>
+            <p class="text-xs text-gray-400">أو اسحب وأفلت الملفات هنا (يمكنك تحديد أكثر من ملف)</p>
+            <input type="file" id="fileInput" accept="application/pdf" multiple class="hidden">
+        </div>
+
+        <!-- File List -->
+        <div id="fileList" class="space-y-3 mb-6"></div>
+
+        <!-- Process Button -->
+        <button id="processBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-red-600/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm" disabled>
+            <i class="fa-solid fa-object-group text-lg"></i>
+            <span>دمج الملفات الآن</span>
+        </button>
+
+        <!-- Result Box -->
+        <div id="resultSection" class="hidden mt-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xl mx-auto mb-3 shadow-md">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h4 class="font-bold text-emerald-900 text-base mb-1">تم دمج الملفات بنجاح!</h4>
+            <p class="text-emerald-700 text-xs mb-4">الملف أصبح جاهزاً للتحميل على جهازك.</p>
+            <a id="downloadLink" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-xs transition-all shadow-md" download="merged.pdf">
+                <i class="fa-solid fa-download"></i>
+                <span>تحميل الملف المدمج</span>
+            </a>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-500">
+        <p>جميع الحقوق محفوظة © 2026 - PDF Master</p>
+    </footer>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const processBtn = document.getElementById('processBtn');
+        const resultSection = document.getElementById('resultSection');
+        const downloadLink = document.getElementById('downloadLink');
+
+        let selectedFiles = [];
+
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            selectedFiles = selectedFiles.concat(files);
+            renderFiles();
+        });
+
+        function renderFiles() {
+            fileList.innerHTML = '';
+            if (selectedFiles.length > 0) {
+                processBtn.removeAttribute('disabled');
+            } else {
+                processBtn.setAttribute('disabled', 'true');
+            }
+
+            selectedFiles.forEach((file, index) => {
+                const div = document.createElement('div');
+                div.className = 'bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between text-sm shadow-sm';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 truncate">
+                        <i class="fa-solid fa-file-pdf text-red-600 text-lg"></i>
+                        <div class="truncate">
+                            <h4 class="font-bold text-gray-800 truncate">${file.name}</h4>
+                            <span class="text-xs text-gray-400">${Math.round(file.size / 1024)} KB</span>
+                        </div>
+                    </div>
+                    <button onclick="removeFile(${index})" class="w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors flex items-center justify-center">
+                        <i class="fa-solid fa-trash-can text-sm"></i>
+                    </button>
+                `;
+                fileList.appendChild(div);
+            });
+        }
+
+        window.removeFile = function(index) {
+            selectedFiles.splice(index, 1);
+            renderFiles();
+        }
+
+        processBtn.addEventListener('click', async () => {
+            if (selectedFiles.length < 2) {
+                alert('الرجاء اختيار ملفين على الأقل للدمج.');
+                return;
+            }
+
+            processBtn.setAttribute('disabled', 'true');
+            processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>جاري دمج الملفات...</span>';
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const mergedPdf = await PDFDocument.create();
+
+                for (let file of selectedFiles) {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await PDFDocument.load(arrayBuffer);
+                    const pages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+                    pages.forEach((page) => mergedPdf.addPage(page));
+                }
+
+                const mergedPdfBytes = await mergedPdf.save();
+                const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                downloadLink.href = url;
+                resultSection.classList.remove('hidden');
+                processBtn.innerHTML = '<i class="fa-solid fa-check"></i><span>تم الدمج بنجاح</span>';
+            } catch (error) {
+                console.error(error);
+                alert('حدث خطأ أثناء دمج الملفات.');
+                processBtn.removeAttribute('disabled');
+                processBtn.innerHTML = '<i class="fa-solid fa-object-group text-lg"></i><span>دمج الملفات الآن</span>';
+            }
+        });
+    </script>
+</body>
+</html>

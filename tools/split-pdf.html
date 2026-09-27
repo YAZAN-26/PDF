@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقسيم PDF - PDF Master</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Cairo', sans-serif; background-color: #f3f4f6; } </style>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-between text-gray-800">
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+            <a href="../index.html" class="flex items-center gap-2 text-gray-600 hover:text-indigo-600 font-bold transition-colors text-sm">
+                <i class="fa-solid fa-arrow-right"></i><span>العودة للرئيسية</span>
+            </a>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white text-lg shadow-md">
+                    <i class="fa-solid fa-scissors"></i>
+                </div>
+                <span class="text-lg font-extrabold text-gray-900">تقسيم PDF</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 py-12 w-full">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-2">استخراج نطاق صفحات من PDF</h1>
+            <p class="text-gray-600 text-sm">فصل صفحات معينة من المستند وإنشاء ملف PDF جديد منها.</p>
+        </div>
+
+        <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-gray-300 hover:border-indigo-500 bg-white rounded-2xl p-10 text-center cursor-pointer transition-all shadow-sm hover:shadow-md group mb-6">
+            <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-4 group-hover:scale-105 transition-transform">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+            </div>
+            <h3 class="font-bold text-gray-800 text-base mb-1">اختر ملف PDF للتقسيم</h3>
+            <p class="text-xs text-gray-400">اسحب وأفلت الملف هنا</p>
+            <input type="file" id="fileInput" accept="application/pdf" class="hidden">
+        </div>
+
+        <div id="fileInfo" class="mb-6"></div>
+
+        <div id="optionsSection" class="hidden bg-white border border-gray-200 rounded-2xl p-6 shadow-sm mb-6">
+            <label class="block font-bold text-gray-800 text-sm mb-2">نطاق الصفحات المطلوب استخراجها (مثال: 1-5):</label>
+            <input type="text" id="rangeInput" placeholder="مثال: 1-3" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-600">
+        </div>
+
+        <button id="processBtn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl shadow-lg shadow-indigo-600/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm" disabled>
+            <i class="fa-solid fa-scissors text-lg"></i>
+            <span>تقسيم واستخراج الآن</span>
+        </button>
+
+        <div id="resultSection" class="hidden mt-6 bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
+            <div class="w-12 h-12 bg-emerald-600 text-white rounded-full flex items-center justify-center text-xl mx-auto mb-3 shadow-md">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h4 class="font-bold text-emerald-900 text-base mb-1">تم تقسيم الملف بنجاح!</h4>
+            <p class="text-emerald-700 text-xs mb-4">الملف المستخرج جاهز للتحميل.</p>
+            <a id="downloadLink" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-xs transition-all shadow-md" download="split.pdf">
+                <i class="fa-solid fa-download"></i><span>تحميل الملف المستخرج</span>
+            </a>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 py-6 text-center text-xs text-gray-500">
+        <p>جميع الحقوق محفوظة © 2026 - PDF Master</p>
+    </footer>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const optionsSection = document.getElementById('optionsSection');
+        const processBtn = document.getElementById('processBtn');
+        const resultSection = document.getElementById('resultSection');
+        const downloadLink = document.getElementById('downloadLink');
+        const rangeInput = document.getElementById('rangeInput');
+        let selectedFile = null;
+
+        fileInput.addEventListener('change', (e) => {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                processBtn.removeAttribute('disabled');
+                optionsSection.classList.remove('hidden');
+                fileInfo.innerHTML = `
+                    <div class="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between text-sm shadow-sm">
+                        <div class="flex items-center gap-3 truncate">
+                            <i class="fa-solid fa-file-pdf text-indigo-600 text-lg"></i>
+                            <div class="truncate"><h4 class="font-bold text-gray-800 truncate">${selectedFile.name}</h4><span class="text-xs text-gray-400">${Math.round(selectedFile.size / 1024)} KB</span></div>
+                        </div>
+                        <button onclick="clearFile()" class="w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                    </div>`;
+            }
+        });
+
+        window.clearFile = function() {
+            selectedFile = null;
+            fileInput.value = '';
+            fileInfo.innerHTML = '';
+            optionsSection.classList.add('hidden');
+            processBtn.setAttribute('disabled', 'true');
+        }
+
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            processBtn.setAttribute('disabled', 'true');
+            processBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>جاري التقسيم والاستخراج...</span>';
+
+            try {
+                const { PDFDocument } = PDFLib;
+                const arrayBuffer = await selectedFile.arrayBuffer();
+                const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+                const val = rangeInput.value.trim();
+                let pagesToExtract = [];
+                if (val.includes('-')) {
+                    let [start, end] = val.split('-').map(Number);
+                    for (let p = start; p <= end; p++) pagesToExtract.push(p - 1);
+                } else {
+                    pagesToExtract.push(Number(val) - 1);
+                }
+
+                const newPdf = await PDFDocument.create();
+                const copiedPages = await newPdf.copyPages(pdfDoc, pagesToExtract);
+                copiedPages.forEach(page => newPdf.addPage(page));
+
+                const pdfBytes = await newPdf.save();
+                const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+                const url = URL.createObjectURL(blob);
+
+                downloadLink.href = url;
+                resultSection.classList.remove('hidden');
+                processBtn.innerHTML = '<i class="fa-solid fa-check"></i><span>تم التقسيم بنجاح</span>';
+            } catch (err) {
+                alert('حدث خطأ، تأكد من نطاق الصفحات المدخل.');
+                processBtn.removeAttribute('disabled');
+                processBtn.innerHTML = '<i class="fa-solid fa-scissors text-lg"></i><span>تقسيم واستخراج الآن</span>';
+            }
+        });
+    </script>
+</body>
+</html>
